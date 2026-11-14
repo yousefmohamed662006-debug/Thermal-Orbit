@@ -1,0 +1,142 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thermal Orbit | Satellite Fire Explorer</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2214%22%20fill%3D%22%23101a2e%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2220%22%20fill%3D%22none%22%20stroke%3D%22%23ffba81%22%20stroke-width%3D%223%22%2F%3E%3Cellipse%20cx%3D%2232%22%20cy%3D%2232%22%20rx%3D%2228%22%20ry%3D%229%22%20transform%3D%22rotate(-32%2032%2032)%22%20fill%3D%22none%22%20stroke%3D%22%23ffba81%22%20stroke-width%3D%223%22%2F%3E%3Cpath%20d%3D%22M34%2016c2%209%2010%2012%2010%2021a12%2012%200%200%201-24%200c0-5%203-10%208-14-1%206%201%208%203%209%203-4%204-9%203-16Z%22%20fill%3D%22%23ff9d63%22%20stroke%3D%22%23101a2e%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2217%22%20r%3D%224%22%20fill%3D%22%23ffe0bd%22%2F%3E%3C%2Fsvg%3E">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.18.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="style.css?v=6">
+<script defer src="global.js?v=6"></script>
+<script defer src="app.js?v=6"></script>
+<script defer src="events.js"></script>
+<script defer src="assistant.js?v=5"></script>
+</head>
+<body>
+<header class="site-header">
+  <a class="brand" href="#explore" aria-label="Thermal Orbit home"><span class="mark" aria-hidden="true"><span></span></span> Thermal Orbit</a>
+  <nav class="site-nav" aria-label="Main navigation">
+    <a href="#explore" aria-current="page">Explore</a><a href="#trends">Trends</a><a href="#compare">Compare</a><a href="#events">Events</a>
+  </nav>
+</header>
+<main>
+  <div class="intro">
+    <div><h1 id="page-title">Explore fire activity</h1><p id="coverage"></p></div>
+    <nav aria-label="Sensor"><button data-sensor="both" aria-pressed="true">Both sensors</button><button data-sensor="MODIS" aria-pressed="false">MODIS</button><button data-sensor="VIIRS" aria-pressed="false">VIIRS</button></nav>
+  </div>
+  <div id="explore-view">
+  <form class="place-search" id="place-search" role="search">
+    <label for="place-query">Find a country, region or city</label>
+    <div><input id="place-query" type="search" placeholder="Try Cairo, California or Chico" autocomplete="off" minlength="2" required><button>Search</button></div>
+    <p id="search-status" role="status"></p><ul id="search-results" aria-label="Matching places"></ul>
+  </form>
+  <div class="layout">
+    <section class="panel map-panel">
+      <div class="panel-head"><div><h2>Satellite map</h2><p id="map-period"></p></div><div class="map-actions"><button id="world" disabled>World view</button><button id="fit" disabled>Fire data area</button></div></div>
+      <div class="map-stage"><div id="map" aria-label="Earth globe with satellite fire detections"></div><p id="map-status" role="status">Loading globe&hellip;</p></div>
+      <div id="event-playback" class="event-playback" hidden>
+        <p id="event-frame" role="status"></p>
+        <button id="event-pause" type="button" hidden>Pause</button>
+        <button id="event-exit" type="button">Back to archive</button>
+        <p class="event-resolution">Satellite detections · grid resolution may vary by date and sensor.</p>
+      </div>
+    </section>
+    <aside>
+      <section class="panel summary">
+        <h2>Observation calendar</h2><select id="archive-scope" hidden aria-hidden="true"><option value="local">Local</option><option value="global">Global</option></select>
+        <div id="global-controls" hidden>
+          <label>Year <select id="global-year"></select></label>
+          <label>Month <select id="global-month"></select></label>
+          <label>Day <select id="global-day"></select></label>
+          <div class="date-actions">
+            <button id="global-play" type="button" disabled>Play days</button>
+            <button id="global-reload" type="button">Refresh archive list</button>
+          </div>
+          <p id="global-status" role="status"></p>
+          <div id="global-days-chart" aria-label="Daily global detections"></div>
+          <label>Compare with <select id="global-compare"></select></label>
+          <p id="global-comparison" aria-live="polite"></p>
+          <p>Colors show relative detection density. Zoom and search to explore the global grid.</p>
+        </div>
+      </section>
+      <div id="local-controls">
+      <section class="panel">
+        <div class="panel-head date-head">
+          <div><h2>Observation calendar</h2><p>Choose a month or inspect a single day.</p></div>
+          <label>Year <select id="calendar-year"></select></label>
+        </div>
+        <div class="date-panel">
+          <div id="month-picker" class="month-picker" aria-label="Month"></div>
+          <div class="day-header"><h3 id="month-heading"></h3></div>
+          <div id="calendar" class="day-calendar" aria-label="Days of selected month"></div>
+          <div class="date-actions"><button id="play" disabled>Play days</button><button id="use-view" disabled title="Filter the fire calendar to the part of the study area visible on the map">Filter to visible area</button></div>
+          <p id="day-status"></p>
+        </div>
+      </section>
+      <section class="panel summary" aria-live="polite">
+        <h2 id="period">Loading detections&hellip;</h2><div class="stat" id="count">&mdash;</div><p>Active cell-days</p>
+        <dl class="summary-foot"><div><dt>Visible detections</dt><dd id="raw">&mdash;</dd></div><div><dt>MODIS</dt><dd id="modis-count">&mdash;</dd></div><div><dt>VIIRS</dt><dd id="viirs-count">&mdash;</dd></div></dl>
+      </section>
+      </div>
+    </aside>
+  </div>
+  </div>
+  <section id="trends-view" class="panel analysis" hidden>
+      <div class="panel-head"><div><h2>Activity over time</h2><p>Northern California</p><p id="baseline"></p></div><div class="trend-controls"><label>Month <select id="trend-month"></select></label><label>Day <select id="trend-day"></select></label></div></div>
+      <div id="trend-stats" class="insight-grid"></div><div id="trend" class="trend" aria-label="Monthly activity chart"></div>
+      <p id="trend-summary" class="trend-summary"></p><p class="chart-key"><i></i> MODIS <i></i> VIIRS</p>
+  </section>
+  <section id="compare-view" class="panel analysis" hidden>
+      <div class="panel-head"><div><h2>Compare regions or periods</h2><p>Northern California. For global monthly comparisons, use the global archive in <a href="#explore">Explore</a>.</p></div></div>
+      <div class="compare-controls"><label>Period A <select id="compare-primary"></select></label><label>Region B <select id="compare-region"></select></label><label>Start month B <select id="compare-from"></select></label><label>End month B <select id="compare-through"></select></label><button id="previous-year" type="button">Same period last year</button></div>
+      <div class="compare-controls"><label>Optional day in A <select id="compare-day-a"></select></label><label>Optional day in B <select id="compare-day-b"></select></label></div>
+      <div id="compare-insight" class="compare-insight"></div><div id="comparison" class="comparison"></div>
+      <button id="export-compare" type="button">Export comparison CSV</button>
+  </section>
+  <section id="events-view" hidden>
+    <p>Five wildfire stories. Explore the event date or replay the 30 days leading up to it.</p>
+    <p id="events-status" role="status"></p>
+    <div id="event-list" class="event-list"></div>
+  </section>
+  <p id="status" role="status"></p>
+</main>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <a class="brand" href="#explore"><span class="mark" aria-hidden="true"><span></span></span> Thermal Orbit</a>
+      <p>Satellite Fire Explorer</p>
+    </div>
+    <nav aria-label="Footer navigation">
+      <a href="#explore">Explore</a>
+      <a href="#trends">Trends</a>
+      <a href="#compare">Compare</a>
+      <a href="#events">Events</a>
+    </nav>
+    <details>
+      <summary>Credits</summary>
+      <ul>
+        <li><a href="https://www.openstreetmap.org/copyright">&copy; OpenStreetMap contributors</a></li>
+        <li><a href="https://openfreemap.org/">OpenFreeMap</a> &middot; <a href="https://openmaptiles.org/">&copy; OpenMapTiles</a></li>
+        <li><a href="https://s2maps.eu/">Sentinel-2 cloudless by EOX</a></li>
+        <li><a href="https://firms.modaps.eosdis.nasa.gov/">NASA FIRMS</a></li>
+        <li><a href="https://www.geonames.org/">GeoNames</a> &middot; <a href="https://open-meteo.com/en/docs/geocoding-api">Open-Meteo</a></li>
+      </ul>
+    </details>
+  </div>
+</footer>
+<button id="assistant-open" class="assistant-launch" aria-controls="assistant-panel" aria-expanded="false"><span class="assistant-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="8" stroke="currentColor" stroke-width="1.5"/><ellipse cx="16" cy="16" rx="15" ry="5" transform="rotate(-35 16 16)" stroke="currentColor" stroke-width="1.5"/><circle cx="26" cy="8" r="2.5" fill="currentColor"/></svg></span> Ask Thermal Orbit</button>
+<section id="assistant-panel" class="assistant-panel" aria-labelledby="assistant-title" hidden>
+  <div class="assistant-head"><strong id="assistant-title"><span class="assistant-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="8" stroke="currentColor" stroke-width="1.5"/><ellipse cx="16" cy="16" rx="15" ry="5" transform="rotate(-35 16 16)" stroke="currentColor" stroke-width="1.5"/><circle cx="26" cy="8" r="2.5" fill="currentColor"/></svg></span> Thermal Orbit assistant</strong><button id="assistant-close" type="button" aria-label="Close assistant">&times;</button></div>
+  <div id="assistant-log" role="log" aria-live="polite"></div>
+  <div class="assistant-suggestions">
+    <button type="button" data-question="What years does Thermal Orbit cover?">Data coverage</button>
+    <button type="button" data-question="Show July 2024 in Northern California.">Open July 2024</button>
+  </div>
+  <form id="assistant-form">
+    <input id="assistant-input" dir="auto" aria-label="Ask about Thermal Orbit" maxlength="2000" required placeholder="Ask about a place or date">
+    <button type="submit">Send</button>
+  </form>
+</section>
+</body>
+</html>
+
